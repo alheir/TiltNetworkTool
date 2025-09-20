@@ -1,0 +1,6 @@
+PyQt6
+PyOpenGL
+numpy
+pyrr
+pyserial
+pyqtdarktheme==2.1.0
