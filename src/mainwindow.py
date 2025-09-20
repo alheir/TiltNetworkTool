@@ -134,11 +134,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def updateAvailablePorts(self):
         self.port_cb.clear()
         for port, desc, hwid in comports():
-            self.port_cb.addItem(port)
+            self.port_cb.addItem(f"{port} - {desc}")
 
     def getPort(self):
-        port = self.port_cb.currentText()
-        if(port): return port
+        text = self.port_cb.currentText()
+        if text:
+            port = text.split(" - ")[0]
+            return port
         return None
 
     def selectFRDMModel(self):
