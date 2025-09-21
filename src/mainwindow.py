@@ -275,7 +275,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             <li>Eng. Juan Francisco Sbruzzi (original TiltNetworkTool, 🏆🏆🏆)</li>
             <li>Alejandro Nahuel Heir (adaptation, current dev)</li>
         </ul>
-        <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool">github.com/alheir/TiltNetworkTool</a></p>
+        <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool" style="color:green;">github.com/alheir/TiltNetworkTool</a></p>
         """
         QMessageBox.about(self, "About", about_text)
 
@@ -297,3 +297,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except SerialException as e:
             logging.warning(f"[MainWindow] Error closing serial on exit: {e}")
         event.accept()
+
+    def setTheme(self, theme):
+        self.theme = theme
+        self.oglw.setTheme(theme)
