@@ -14,6 +14,7 @@ from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_C
 from src.widgets.station_info_widget import StationInfoWidget
 from src.protocol.protocol_handler import ProtocolHandler
 from src.widgets.simulation_widget import SimulationWidget
+from src.themes import LIGHT_THEME, DARK_THEME
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
@@ -39,6 +40,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionFRDM_K64F.triggered.connect(self.selectFRDMModel)
         self.actionPlane.triggered.connect(self.selectPlaneModel)
         self.actionAbout.triggered.connect(self.showAbout)
+        self.actionToggle_theme.triggered.connect(self.toggleTheme)
+        self.current_theme = 'light'
 
         for i in range(len(STATION_ID)):
             siw = StationInfoWidget(self)
@@ -299,5 +302,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         event.accept()
 
     def setTheme(self, theme):
-        self.theme = theme
+        self.current_theme = theme
         self.oglw.setTheme(theme)
+
+    def toggleTheme(self):
+        if self.current_theme == 'light':
+            self.app.setStyleSheet(DARK_THEME)
+            self.current_theme = 'dark'
+        else:
+            self.app.setStyleSheet(LIGHT_THEME)
+            self.current_theme = 'light'
+        self.setTheme(self.current_theme)

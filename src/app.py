@@ -18,24 +18,17 @@ def main():
         default='ERROR',
         help='Set the logging level (default: ERROR)'
     )
-    parser.add_argument(
-        '--theme', '-t',
-        choices=['light', 'dark'],
-        default='light',
-        help='Set the UI theme (default: light)'
-    )
+
     args = parser.parse_args()
     
     logging.basicConfig(level=getattr(logging, args.log_level.upper()), format='%(levelname)s: %(message)s')
    
     app = QtWidgets.QApplication(sys.argv)
     
-    if args.theme == 'dark':
-        app.setStyleSheet(DARK_THEME)
-    else:
-        app.setStyleSheet(LIGHT_THEME)
+    app.setStyleSheet(LIGHT_THEME)
 
     window = MainWindow()
-    window.setTheme(args.theme)
+    window.app = app
+    window.setTheme('light')
     window.show()
     sys.exit(app.exec())
