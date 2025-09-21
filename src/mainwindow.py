@@ -19,7 +19,8 @@ IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
 LAST_TIME_UPDATE_MS = 1000  # 1s
 SIMULATION_NAME = "⚔️🛠️⚙️Serial Data Emulator⚙️🛠️⚔️"
-HISTORY_LIMIT = 100  # Puntos maximos a conservar para plotting
+HISTORY_LIMIT = 50  # Puntos maximos por plot
+PLOT_UPDATE_MS = 100 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     
@@ -86,6 +87,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         update_timer.start()
         self.lastUpdateTimer = update_timer
 
+        # New: Timer para actualizar plots periódicamente
+        plot_update_timer = QTimer()
+        plot_update_timer.setInterval(PLOT_UPDATE_MS)
+        plot_update_timer.setSingleShot(False)
+        plot_update_timer.timeout.connect(self.updateOpenPlots)
+        plot_update_timer.start()
+        self.plotUpdateTimer = plot_update_timer
+
         self.stationSelector_cb.addItems(STATION_ID_NAMES)
         self.send_pb.clicked.connect(self.sendLEDCommand)
         self.LED_gb.setEnabled(False)
@@ -107,6 +116,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.plot_widgets[station_index].close()
                 self.plot_widgets[station_index] = None
         return toggle
+
+    def updateOpenPlots(self):
+        for i in range(STATION_COUNT):
+            if self.plot_widgets[i]:
+                self.plot_widgets[i].updatePlot(self.angle_histories[i])
 
     def processParsedMessage(self, msg: dict):
         """
@@ -139,8 +153,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if len(self.angle_histories[station_index][angle_index]) > HISTORY_LIMIT:
                 self.angle_histories[station_index][angle_index].pop(0)
 
-            if self.plot_widgets[station_index]:
-                self.plot_widgets[station_index].updatePlot(self.angle_histories[station_index])
             self.last_update_times[station_index] = time.time()
             self.timers[station_index].start()
             self.stationInfoWidgets[station_index].setEnabled(True)
@@ -214,6 +226,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except SerialException as e:
                 logging.warning(f"[MainWindow] Error closing serial port: {e}")
             self.serialConnected = False
+            self.angle_histories = [[[], [], []] for _ in range(STATION_COUNT)]
         self.configPortSettings(self.serialConnected)
     
     def configPortSettings(self, connected=False):
