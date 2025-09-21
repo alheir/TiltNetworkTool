@@ -247,7 +247,7 @@
  <customwidgets>
   <customwidget>
    <class>FrdmViewerWidget</class>
-   <extends>QOpenGLWidget</extends>
+   <extends>QWidget</extends>
    <header>src.widgets.frdm_viewer_widget</header>
   </customwidget>
  </customwidgets>
