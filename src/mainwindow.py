@@ -12,9 +12,11 @@ from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_C
 from src.widgets.station_info_widget import StationInfoWidget
 from src.protocol.protocol_handler import ProtocolHandler
 from src.widgets.simulation_widget import SimulationWidget
+import time
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
+LAST_TIME_UPDATE_MS = 1000  # 1s
 SIMULATION_NAME = "⚔️🛠️⚙️Serial Data Emulator⚙️🛠️⚔️"
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -43,6 +45,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.stationInfoWidgets.append(siw)
         self.timers = []
 
+        self.last_update_times = [None] * STATION_COUNT
+
         # this section builds the network viewer for each station
         for i, siw in enumerate(self.stationInfoWidgets):
             siw.setEnabled(False)
@@ -65,6 +69,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         timer.timeout.connect(self.receive)
         timer.start()
         self.rxTimer = timer
+
+        # checks last update times every LAST_TIME_UPDATE_MS ms
+        update_timer = QTimer()
+        update_timer.setInterval(LAST_TIME_UPDATE_MS)
+        update_timer.setSingleShot(False)
+        update_timer.timeout.connect(self.updateLastUpdateLabels)
+        update_timer.start()
+        self.lastUpdateTimer = update_timer
 
         self.stationSelector_cb.addItems(STATION_ID_NAMES)
         self.send_pb.clicked.connect(self.sendLEDCommand)
@@ -103,6 +115,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         if self.stations[station_index].assignAngle(angle_index, value):
+            self.last_update_times[station_index] = time.time()
             self.timers[station_index].start()
             self.stationInfoWidgets[station_index].setEnabled(True)
             self.stationInfoWidgets[station_index].setAngleLabels(self.stations[station_index].angles)
@@ -240,3 +253,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool">github.com/alheir/TiltNetworkTool</a></p>
         """
         QMessageBox.about(self, "About", about_text)
+
+    # New method to update last update labels
+    def updateLastUpdateLabels(self):
+        current_time = time.time()
+        for i, last_time in enumerate(self.last_update_times):
+            if last_time is not None:
+                seconds_ago = current_time - last_time
+                self.stationInfoWidgets[i].setLastUpdateTime(seconds_ago)
+            else:
+                self.stationInfoWidgets[i].setLastUpdateTime(None)
