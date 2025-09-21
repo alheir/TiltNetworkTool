@@ -9,7 +9,8 @@ import serial
 from serial.tools.list_ports import comports
 from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_COUNT, STATION_ANGLES
 from src.widgets.station_info_widget import StationInfoWidget
-from src.protocol.protocol_handler import ProtocolHandler  # NUEVO: capa intermedia de protocolo
+from src.protocol.protocol_handler import ProtocolHandler
+from src.widgets.simulation_widget import SimulationWidget
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
@@ -27,6 +28,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.updateAvailablePorts()
         self.serial = serial.Serial()
         self.protocol = ProtocolHandler()
+        self.simulation_widget = None
 
         self.stationInfoWidgets = []
         self.actionFRDM_K64F.triggered.connect(self.selectFRDMModel)
@@ -134,11 +136,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def toggleSerialConnection(self):
         if(not self.serialConnected):
             port = self.getPort()
-            self.serial.baudrate = int(self.baudrate_cb.currentText())
-            self.serial.port = port
-            self.serial.open()
-            self.serialConnected = self.serial.is_open
+            if port == "~~~Serial Data Emulator~~~":
+                self.serialConnected = True
+                # Se le pasa self (mainwindow) para poder llamar a processParsedMessage() bypasseando on_bytes.
+                self.simulation_widget = SimulationWidget(self.protocol, self)
+                self.simulation_widget.show()
+            else:
+                self.serial.baudrate = int(self.baudrate_cb.currentText())
+                self.serial.port = port
+                self.serial.open()
+                self.serialConnected = self.serial.is_open
         else:
+            if self.simulation_widget:
+                self.simulation_widget.close()
+                self.simulation_widget = None
             self.serial.close()
             self.serialConnected = False
         self.configPortSettings(self.serialConnected)
@@ -155,6 +166,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.port_cb.clear()
         for port, desc, hwid in comports():
             self.port_cb.addItem(f"{port} - {desc}")
+        self.port_cb.addItem("~~~Serial Data Emulator~~~")
 
     def getPort(self):
         text = self.port_cb.currentText()

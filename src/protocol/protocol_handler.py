@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 class ProtocolHandler:
     """
@@ -10,14 +10,12 @@ class ProtocolHandler:
       - Construcción de mensajes salientes en build_led_command().
     """
     def __init__(self) -> None:
-        # Definir constantes del protocolo elegido (p.ej., bytes de inicio/fin, etc).
-        
-        self._rx_buffer = bytearray() # Sugerencia: mantener un buffer interno
+        # Buffer/s, constantes, ...        
         print("[ProtocolHandler] Inicializado. Listo para recibir bytes del puerto serie.")
 
     def on_bytes(self, data: bytes) -> List[Dict[str, Any]]:
         """
-        Recibe bytes crudos desde el puerto serie y devuelve 
+        Recibe bytes crudos desde el puerto serie y devuelve a la GUI una lista de mensajes parseados.
 
         Debe devolver: lista de mensajes. Cada mensaje es un dict con:
           - 'station_index': int (0..N-1)
