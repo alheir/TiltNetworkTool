@@ -15,6 +15,7 @@ from src.widgets.simulation_widget import SimulationWidget
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
+SIMULATION_NAME = "⚔️🛠️⚙️Serial Data Emulator⚙️🛠️⚔️"
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     
@@ -138,7 +139,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def toggleSerialConnection(self):
         if(not self.serialConnected):
             port = self.getPort()
-            if port == "~~~Serial Data Emulator~~~":
+            if port == SIMULATION_NAME:
                 self.serialConnected = True
                 # Se le pasa self (mainwindow) para poder llamar a processParsedMessage() bypasseando on_bytes.
                 self.simulation_widget = SimulationWidget(self.protocol, self)
@@ -168,7 +169,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.port_cb.clear()
         for port, desc, hwid in comports():
             self.port_cb.addItem(f"{port} - {desc}")
-        self.port_cb.addItem("~~~Serial Data Emulator~~~")
+        self.port_cb.addItem(SIMULATION_NAME)
 
     def getPort(self):
         text = self.port_cb.currentText()
