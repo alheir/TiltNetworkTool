@@ -3,10 +3,11 @@ import logging
 from math import inf
 
 from PyQt6.QtWidgets import QMainWindow, QMessageBox
-from PyQt6.QtCore import QTimer, QByteArray
+from PyQt6.QtCore import QTimer
 
 import serial
 from serial.tools.list_ports import comports
+from serial.serialutil import SerialException
 
 from src.ui.mainwindow import Ui_MainWindow
 from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_COUNT, STATION_ANGLES
@@ -132,8 +133,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return -1
 
     def receive(self):
+        if not self.serialConnected or not self.serial.is_open:
+            return
         try:
-            while self.serial.is_open and self.serial.in_waiting > 0:
+            while self.serial.in_waiting > 0:
                 to_read = self.serial.in_waiting or 1
                 chunk = self.serial.read(to_read)
                 try:
@@ -146,27 +149,45 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     continue
                 for msg in messages:
                     self.processParsedMessage(msg)
-        except Exception as e:
-            logging.error(f"[MainWindow] Error en receive(): {e}")
-
+        except (SerialException, OSError) as e:
+            logging.error(f"[MainWindow] Error reading from serial port: {e}")
+    
     def toggleSerialConnection(self):
-        if(not self.serialConnected):
-            port = self.getPort()
+        if not self.serialConnected:
+            self.port = self.getPort()
+            port = self.port
             if port == SIMULATION_NAME:
                 self.serialConnected = True
                 # Se le pasa self (mainwindow) para poder llamar a processParsedMessage() bypasseando on_bytes.
                 self.simulation_widget = SimulationWidget(self.protocol, self)
                 self.simulation_widget.show()
+            elif port:
+                try:
+                    self.serial.baudrate = int(self.baudrate_cb.currentText())
+                    self.serial.port = port
+                    self.serial.open()
+                    if self.serial.is_open:
+                        self.serialConnected = True
+                        logging.info(f"[MainWindow] Connected to serial port: {port}")
+                    else:
+                        raise SerialException("Failed to open port")
+                except (SerialException, ValueError, OSError) as e:
+                    logging.error(f"[MainWindow] Failed to connect to serial port {port}: {e}")
+                    QMessageBox.warning(self, "Connection Error", f"Could not connect to port {port}.\nError: {e}")
+                    self.serialConnected = False
             else:
-                self.serial.baudrate = int(self.baudrate_cb.currentText())
-                self.serial.port = port
-                self.serial.open()
-                self.serialConnected = self.serial.is_open
+                QMessageBox.warning(self, "No Port Selected", "Please select a valid serial port.")
+                self.serialConnected = False
         else:
-            if self.simulation_widget:
-                self.simulation_widget.close()
-                self.simulation_widget = None
-            self.serial.close()
+            try:
+                if self.simulation_widget:
+                    self.simulation_widget.close()
+                    self.simulation_widget = None
+                if self.serial.is_open:
+                    self.serial.close()
+                    logging.info("[MainWindow] Disconnected from serial port")
+            except SerialException as e:
+                logging.warning(f"[MainWindow] Error closing serial port: {e}")
             self.serialConnected = False
         self.configPortSettings(self.serialConnected)
     
@@ -208,7 +229,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.selectFRDMModel()
 
     def sendLEDCommand(self):
-        if not self.serialConnected:
+        if (self.port != SIMULATION_NAME) and (not self.serialConnected or not self.serial.is_open):
+            QMessageBox.warning(self, "Not Connected", "Please connect to a serial port first.")
             return
         
         self.selected_station_index = STATION_ID_NAMES.index(self.stationSelector_cb.currentText())
@@ -228,18 +250,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         except Exception as e:
             logging.error(f"[MainWindow] Error construyendo LED cmd: {e}")
+            QMessageBox.warning(self, "Command Build Error", f"Failed to build LED command: {e}")
             return
 
         if not message:
             logging.warning("[MainWindow] build_led_command devolvió vacío/None, no se envía nada.")
+            QMessageBox.information(self, "No Command", "No command to send.")
             return
 
         try:
             self.serial.write(message)
             logging.debug(f"[MainWindow] Enviado {len(message)} bytes: {message}")
-        except Exception as e:
+        except (SerialException, OSError) as e:
             logging.error(f"[MainWindow] Error enviando por serial: {e}")
-
+            QMessageBox.warning(self, "Send Error", f"Failed to send command: {e}")
+    
     def showAbout(self):
         about_text = """
         <h2>Tilt Network Tool</h2>
@@ -266,4 +291,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         if self.simulation_widget:
             self.simulation_widget.close()
+        try:
+            if self.serial.is_open:
+                self.serial.close()
+        except SerialException as e:
+            logging.warning(f"[MainWindow] Error closing serial on exit: {e}")
         event.accept()
