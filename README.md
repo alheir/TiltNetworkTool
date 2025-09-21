@@ -1,2 +1,53 @@
 # TiltNetworkTool
-GUI para utilizar en el Trabajo Práctico 2 del curso 25.27 - Sistemas Embebidos del ITBA, graficando yaw-pitch-roll de cada estación. Cada grupo debe completar la interfaz de comunicación serie. Diseñado originalmente por el Ing. Juan Sbruzzi durante su transcurso por la materia en Q2-2023.
+Esta es una herramienta de apoyo para el curso 25.27 – Sistemas Embebidos del ITBA (Carrera de Ingeniería Electrónica), para el trabajo práctico de comunicación serie, donde múltiples estaciones basadas en FRDM-K64F reportan su inclinación utilizando sus acelerómetros, a través de un bus CAN compartido. Ya cuenta con su parte gráfica resuelta, dejando para su libre implementación el protocolo serie a usar para-con el K64F.
+
+> Diseñado originalmente por el Ing. Juan Francisco Sbruzzi durante su transcurso por el curso en Q2-2023.
+
+## Getting started
+
+En el directorio el proyecto, crear entorno virtual
+
+```bash
+python -m venv venv
+```
+
+Activar el entorno virtual:
+
+- En Windows:
+    ```bash
+    venv\Scripts\activate
+    ```
+- En Linux/Mac:
+    ```bash
+    source venv/bin/activate
+    ```
+
+Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+Ejecutar la aplicación
+
+```bash
+python main.py
+```
+
+![alt text](docs/tool_overview.png)
+
+## What to do
+
+Implementar los métodos `on_bytes` y `build_led_command` de la clase `ProtocolHandler` (`src/protocol/protocol_handler.py`), en consistencia con el protocolo diseñado para-con el K64F.
+
+> Leer con detenimiento el docstring de los métodos para comprender qué reciben y qué deben devolver.
+
+La aplicación contiene diversos prints/logs que reportan información útil del funcionamiento interno. Se puede ajustar el nivel de reporte; ver `python main.py -h` y/o `src/app.py`
+
+### Serial Data Emulator
+
+La aplicación cuenta con un emulador de puerto serie, que permite probar la aplicación sin tener un dispositivo real conectado y enviando comandos por el puerto. La misma permite enviar mensajes personalizados como si viniesen de un dispositivo externo, permitiendo interactuar el método `build_led_command`. También, cuenta con un modo automático para enviar directamente datos dummy a la GUI, bypasseando `protocol_handler`, pudiendo visualizar las estaciones en movimiento.
+
+![alt text](docs/ports_list.png)
+
+![alt text](docs/emulator_detail.png)
