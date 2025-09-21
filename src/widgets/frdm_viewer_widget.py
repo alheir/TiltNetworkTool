@@ -107,7 +107,7 @@ class FrdmViewerWidget(QOpenGLWidget):
     def quit(self) -> None:
         """ cleanup the app, run exit code """
 
-        for x in range(7):
+        for x in range(STATION_COUNT):
             self.stations_mesh[x].destroy()
         self.enabled_texture.destroy()
         self.disabled_texture.destroy()

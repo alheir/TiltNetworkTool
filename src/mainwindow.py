@@ -1,28 +1,23 @@
-# PyQt5 modules
+import time
+import logging
 from math import inf
-from PyQt6.QtWidgets import QMainWindow
-# Project modules
-from src.ui.mainwindow import Ui_MainWindow
 
-from PyQt6.QtCore import QByteArray, QTimer
+from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from PyQt6.QtCore import QTimer, QByteArray
+
 import serial
 from serial.tools.list_ports import comports
+
+from src.ui.mainwindow import Ui_MainWindow
 from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_COUNT, STATION_ANGLES
 from src.widgets.station_info_widget import StationInfoWidget
+from src.protocol.protocol_handler import ProtocolHandler
+from src.widgets.simulation_widget import SimulationWidget
 
-STOP_MASK = 0xC0
-STOP_BITS = 0xC0
-
-MAX_MSG_SIZE = 3
-IDLE_TIMER_MS = 2500 # 2.5s max
+IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
-
-ID_SHIFT = 3
-ID_MASK = 0x07
-SIGN_SHIFT = 5
-SIGN_MASK = 0x01
-FRAMETYPE_SHIFT = 3
-FRAMETYPE_MASK = 0x03
+LAST_TIME_UPDATE_MS = 1000  # 1s
+SIMULATION_NAME = "⚔️🛠️⚙️Serial Data Emulator⚙️🛠️⚔️"
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     
@@ -36,19 +31,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionRefresh_ports.triggered.connect(self.updateAvailablePorts)
         self.updateAvailablePorts()
         self.serial = serial.Serial()
+        self.protocol = ProtocolHandler()
+        self.simulation_widget = None
 
-        self.currBuf = QByteArray()
-        self.isMidFrame = False
-        
         self.stationInfoWidgets = []
         self.actionFRDM_K64F.triggered.connect(self.selectFRDMModel)
         self.actionPlane.triggered.connect(self.selectPlaneModel)
+        self.actionAbout.triggered.connect(self.showAbout)
 
         for i in range(len(STATION_ID)):
             siw = StationInfoWidget(self)
             self.stationInfoLayout.addWidget(siw)
             self.stationInfoWidgets.append(siw)
         self.timers = []
+
+        self.last_update_times = [None] * STATION_COUNT
 
         # this section builds the network viewer for each station
         for i, siw in enumerate(self.stationInfoWidgets):
@@ -73,6 +70,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         timer.start()
         self.rxTimer = timer
 
+        # checks last update times every LAST_TIME_UPDATE_MS ms
+        update_timer = QTimer()
+        update_timer.setInterval(LAST_TIME_UPDATE_MS)
+        update_timer.setSingleShot(False)
+        update_timer.timeout.connect(self.updateLastUpdateLabels)
+        update_timer.start()
+        self.lastUpdateTimer = update_timer
+
         self.stationSelector_cb.addItems(STATION_ID_NAMES)
         self.send_pb.clicked.connect(self.sendLEDCommand)
         self.LED_gb.setEnabled(False)
@@ -85,45 +90,82 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.stationInfoWidgets[stationIndex].setEnabled(False)
         self.oglw.setStationInactive(stationIndex)
 
-    def processBuffer(self):
-        buff = self.currBuf[-2:]
-        b1 = int.from_bytes(buff[1])
-        index = b1 & ID_MASK
-        angle = (b1 >> FRAMETYPE_SHIFT) & FRAMETYPE_MASK
-        value = int.from_bytes(buff[0])
-        if((b1 >> SIGN_SHIFT) & SIGN_MASK):
-            value = -value
-        if(self.stations[index].assignAngle(angle, value)):
-            self.timers[index].start()
-            self.stationInfoWidgets[index].setEnabled(True)
-            self.stationInfoWidgets[index].setAngleLabels(self.stations[index].angles)
+    def processParsedMessage(self, msg: dict):
+        """
+        msg dict esperado (lo produce ProtocolHandler.on_bytes):
+          - station_index: int
+          - angle: int en {0: roll, 1: pitch, 2: yaw}
+          - value: float/int
+        """
+        try:
+            station_index = int(msg.get('station_index'))
+            angle_id = msg.get('angle')
+            value = msg.get('value')
+        except Exception as e:
+            logging.warning(f"[MainWindow] Mensaje inválido (faltan campos): {msg} ({e})")
+            return
+
+        angle_index = self._resolve_angle_index(angle_id)
+        if angle_index not in (0, 1, 2):
+            logging.warning(f"[MainWindow] 'angle' no reconocido: {angle_id}")
+            return
+
+        if station_index < 0 or station_index >= STATION_COUNT:
+            logging.warning(f"[MainWindow] 'station_index' fuera de rango: {station_index}") 
+            return
+
+        if self.stations[station_index].assignAngle(angle_index, value):
+            self.last_update_times[station_index] = time.time()
+            self.timers[station_index].start()
+            self.stationInfoWidgets[station_index].setEnabled(True)
+            self.stationInfoWidgets[station_index].setAngleLabels(self.stations[station_index].angles)
             self.oglw.setOrientation(
-                index,
-                -self.stations[index].roll,
-                -self.stations[index].pitch,
-                +self.stations[index].yaw + 90
+                station_index,
+                -self.stations[station_index].roll,
+                -self.stations[station_index].pitch,
+                +self.stations[station_index].yaw + 90
             )
-        self.currBuf.clear()
+
+    def _resolve_angle_index(self, angle_id):
+        if isinstance(angle_id, int) and angle_id in (0, 1, 2):
+            return angle_id
+        return -1
 
     def receive(self):
-        while(self.serial.is_open and self.serial.in_waiting > 0):
-            read = self.serial.read(1)
-            if(self.currBuf.length() >= MAX_MSG_SIZE):
-                self.currBuf = self.currBuf.right(MAX_MSG_SIZE - 1)
-            self.currBuf.append(read)
-            if((int.from_bytes(read) & STOP_MASK) == STOP_BITS):
-                if(self.currBuf.length() > 1):
-                    self.processBuffer()
+        try:
+            while self.serial.is_open and self.serial.in_waiting > 0:
+                to_read = self.serial.in_waiting or 1
+                chunk = self.serial.read(to_read)
+                try:
+                    messages = self.protocol.on_bytes(chunk)
+                except NotImplementedError as e:
+                    logging.warning(f"[MainWindow] ProtocolHandler.on_bytes no implementado aún: {e}")
+                    break
 
+                if not messages:
+                    continue
+                for msg in messages:
+                    self.processParsedMessage(msg)
+        except Exception as e:
+            logging.error(f"[MainWindow] Error en receive(): {e}")
 
     def toggleSerialConnection(self):
         if(not self.serialConnected):
             port = self.getPort()
-            self.serial.baudrate = int(self.baudrate_cb.currentText())
-            self.serial.port = port
-            self.serial.open()
-            self.serialConnected = self.serial.is_open
+            if port == SIMULATION_NAME:
+                self.serialConnected = True
+                # Se le pasa self (mainwindow) para poder llamar a processParsedMessage() bypasseando on_bytes.
+                self.simulation_widget = SimulationWidget(self.protocol, self)
+                self.simulation_widget.show()
+            else:
+                self.serial.baudrate = int(self.baudrate_cb.currentText())
+                self.serial.port = port
+                self.serial.open()
+                self.serialConnected = self.serial.is_open
         else:
+            if self.simulation_widget:
+                self.simulation_widget.close()
+                self.simulation_widget = None
             self.serial.close()
             self.serialConnected = False
         self.configPortSettings(self.serialConnected)
@@ -140,6 +182,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.port_cb.clear()
         for port, desc, hwid in comports():
             self.port_cb.addItem(f"{port} - {desc}")
+        self.port_cb.addItem(SIMULATION_NAME)
 
     def getPort(self):
         text = self.port_cb.currentText()
@@ -173,15 +216,49 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.selected_g = self.g_checkb.isChecked()
         self.selected_b = self.b_checkb.isChecked()
         
-        print(f"Sent LED command: Station {self.selected_station_index}, (R:{self.selected_r}, G:{self.selected_g}, B:{self.selected_b})")
+        try:
+            message = self.protocol.build_led_command(
+                self.selected_station_index,
+                self.selected_r,
+                self.selected_g,
+                self.selected_b
+            )
+        except NotImplementedError as e:
+            logging.warning(f"[MainWindow] ProtocolHandler.build_led_command no implementado aún: {e}")
+            return
+        except Exception as e:
+            logging.error(f"[MainWindow] Error construyendo LED cmd: {e}")
+            return
 
-        # Replace with actual message construction logic
-        #
-        #
-        #
-        # message = "Example Message"
-        #
-        #
-        #
-        # self.serial.write(message)
-        
+        if not message:
+            logging.warning("[MainWindow] build_led_command devolvió vacío/None, no se envía nada.")
+            return
+
+        try:
+            self.serial.write(message)
+            logging.debug(f"[MainWindow] Enviado {len(message)} bytes: {message}")
+        except Exception as e:
+            logging.error(f"[MainWindow] Error enviando por serial: {e}")
+
+    def showAbout(self):
+        about_text = """
+        <h2>Tilt Network Tool</h2>
+        <p>Tool for monitoring a tilt sensor network.</p>
+        <p>This is a support tool for the course 25.27 - Embedded Systems at ITBA (Electronic Engineering degree), for the serial communication practical work, where multiple FRDM-K64F-based stations report their tilt using their accelerometers, through a shared CAN bus.</p>
+        <p><b>Credits:</b></p>
+        <ul>
+            <li>Eng. Juan Francisco Sbruzzi (original TiltNetworkTool, 🏆🏆🏆)</li>
+            <li>Alejandro Nahuel Heir (adaptation, current dev)</li>
+        </ul>
+        <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool">github.com/alheir/TiltNetworkTool</a></p>
+        """
+        QMessageBox.about(self, "About", about_text)
+
+    def updateLastUpdateLabels(self):
+        current_time = time.time()
+        for i, last_time in enumerate(self.last_update_times):
+            if last_time is not None:
+                seconds_ago = current_time - last_time
+                self.stationInfoWidgets[i].setLastUpdateTime(seconds_ago)
+            else:
+                self.stationInfoWidgets[i].setLastUpdateTime(None)
