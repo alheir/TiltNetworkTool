@@ -70,11 +70,11 @@ class SimulationWidget(QtWidgets.QWidget):
             for angle_idx in range(self.angle_count):
                 # sin(tiempo + offset) * 90
                 offset = (station_idx * 0.5) + (angle_idx * 0.3)  # Offset por estación/ángulo
-                value = math.sin(current_time + offset) * 90
+                value = int(math.sin(current_time + offset) * 90)
                 msg = {
                     'station_index': station_idx,
                     'angle': angle_idx,
-                    'value': round(value, 2)
+                    'value': value
                 }
                 messages.append(msg)
 

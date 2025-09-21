@@ -30,13 +30,14 @@ class StationInfoWidget(QtWidgets.QWidget):
         self.groupBox.setTitle(name)
 
     def setAngleLabels(self, roll, pitch, yaw):
-        self.labelRollValue.setText("{}°".format(roll))
-        self.labelPitchValue.setText("{}°".format(pitch))
-        self.labelYawValue.setText("{}°".format(yaw))
+        self.labelRollValue.setText("{}°".format(int(round(roll))))
+        self.labelPitchValue.setText("{}°".format(int(round(pitch))))
+        self.labelYawValue.setText("{}°".format(int(round(yaw))))
+
     def setAngleLabels(self, angles):
-        self.labelRollValue.setText("{}°".format(angles[0]))
-        self.labelPitchValue.setText("{}°".format(angles[1]))
-        self.labelYawValue.setText("{}°".format(angles[2]))
+        self.labelRollValue.setText("{}°".format(int(round(angles[0]))))
+        self.labelPitchValue.setText("{}°".format(int(round(angles[1]))))
+        self.labelYawValue.setText("{}°".format(int(round(angles[2]))))
 
     def setEnabled(self, enabled=True):
         self.groupBox.setEnabled(enabled)
