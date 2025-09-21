@@ -72,6 +72,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         timer.timeout.connect(self.receive)
         timer.start()
         self.rxTimer = timer
+
+        self.stationSelector_cb.addItems(STATION_ID_NAMES)
+        self.send_pb.clicked.connect(self.sendLEDCommand)
         
 
     def buildStationTimeout(self, stationIndex):
@@ -158,3 +161,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.actionFRDM_K64F.setChecked(True)
             self.selectFRDMModel()
+
+    def sendLEDCommand(self):
+        self.selected_station_index = STATION_ID_NAMES.index(self.stationSelector_cb.currentText())
+        self.selected_r = self.r_checkb.isChecked()
+        self.selected_g = self.g_checkb.isChecked()
+        self.selected_b = self.b_checkb.isChecked()
+
+        print(f"Station: {self.selected_station_index}, R: {self.selected_r}, G: {self.selected_g}, B: {self.selected_b}")
+                    
