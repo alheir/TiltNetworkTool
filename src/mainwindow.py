@@ -1,6 +1,6 @@
 # PyQt5 modules
 from math import inf
-from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtWidgets import QMainWindow, QMessageBox
 # Project modules
 from src.ui.mainwindow import Ui_MainWindow
 
@@ -34,6 +34,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.stationInfoWidgets = []
         self.actionFRDM_K64F.triggered.connect(self.selectFRDMModel)
         self.actionPlane.triggered.connect(self.selectPlaneModel)
+        self.actionAbout.triggered.connect(self.showAbout)
 
         for i in range(len(STATION_ID)):
             siw = StationInfoWidget(self)
@@ -224,3 +225,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             logging.debug(f"[MainWindow] Enviado {len(message)} bytes: {message}")
         except Exception as e:
             logging.error(f"[MainWindow] Error enviando por serial: {e}")
+
+    def showAbout(self):
+        about_text = """
+        <h2>Tilt Network Tool</h2>
+        <p>Tool for monitoring a tilt sensor network.</p>
+        <p>This is a support tool for the course 25.27 - Embedded Systems at ITBA (Electronic Engineering degree), for the serial communication practical work, where multiple FRDM-K64F-based stations report their tilt using their accelerometers, through a shared CAN bus.</p>
+        <p><b>Credits:</b></p>
+        <ul>
+            <li>Eng. Juan Francisco Sbruzzi (original TiltNetworkTool, 🏆🏆🏆)</li>
+            <li>Alejandro Nahuel Heir (adaptation, current dev)</li>
+        </ul>
+        <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool">github.com/alheir/TiltNetworkTool</a></p>
+        """
+        QMessageBox.about(self, "About", about_text)
