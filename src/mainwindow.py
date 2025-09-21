@@ -262,3 +262,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.stationInfoWidgets[i].setLastUpdateTime(seconds_ago)
             else:
                 self.stationInfoWidgets[i].setLastUpdateTime(None)
+
+    def closeEvent(self, event):
+        if self.simulation_widget:
+            self.simulation_widget.close()
+        event.accept()
