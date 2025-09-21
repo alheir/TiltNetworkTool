@@ -75,6 +75,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.stationSelector_cb.addItems(STATION_ID_NAMES)
         self.send_pb.clicked.connect(self.sendLEDCommand)
+        self.LED_gb.setEnabled(False)
         
 
     def buildStationTimeout(self, stationIndex):
@@ -129,6 +130,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     def configPortSettings(self, connected=False):
         self.COM_gb.setEnabled(not connected)
+        self.LED_gb.setEnabled(connected)
         if(connected):
             self.connection_but.setText('Disconnect')
         else:
@@ -163,10 +165,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.selectFRDMModel()
 
     def sendLEDCommand(self):
+        if not self.serialConnected:
+            return
+        
         self.selected_station_index = STATION_ID_NAMES.index(self.stationSelector_cb.currentText())
         self.selected_r = self.r_checkb.isChecked()
         self.selected_g = self.g_checkb.isChecked()
         self.selected_b = self.b_checkb.isChecked()
+        
+        print(f"Sent LED command: Station {self.selected_station_index}, (R:{self.selected_r}, G:{self.selected_g}, B:{self.selected_b})")
 
-        print(f"Station: {self.selected_station_index}, R: {self.selected_r}, G: {self.selected_g}, B: {self.selected_b}")
-                    
+        # Replace with actual message construction logic
+        #
+        #
+        #
+        # message = "Example Message"
+        #
+        #
+        #
+        # self.serial.write(message)
+        
