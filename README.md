@@ -46,7 +46,7 @@ La aplicación contiene diversos prints/logs que reportan información útil del
 
 ### Serial Data Emulator
 
-La aplicación cuenta con un emulador de puerto serie, que permite probar la aplicación sin tener un dispositivo real conectado y enviando comandos por el puerto. La misma permite enviar mensajes personalizados como si viniesen de un dispositivo externo, permitiendo interactuar el método `build_led_command`. También, cuenta con un modo automático para enviar directamente datos dummy a la GUI, bypasseando `protocol_handler`, pudiendo visualizar las estaciones en movimiento.
+La aplicación cuenta con un emulador de puerto serie, que permite probar la aplicación sin tener un dispositivo real conectado y enviando comandos por el puerto. La misma permite enviar mensajes personalizados como si viniesen de un dispositivo externo, permitiendo interactuar con el método `on_bytes` de manera controlada. También, cuenta con un modo automático para enviar directamente datos dummy a la GUI, bypasseando `protocol_handler`, pudiendo visualizar las estaciones en movimiento.
 
 ![alt text](docs/ports_list.png)
 
