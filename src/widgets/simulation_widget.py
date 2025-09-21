@@ -57,7 +57,7 @@ class SimulationWidget(QtWidgets.QWidget):
         if checked:
             self.start_time = time.time()
             self.auto_timer.start()
-            self.output_te.append("Autosend ON, sending sinusoidal data every 100ms")
+            self.output_te.append(f"Autosend ON, sending sinusoidal data every {AUTOSEND_INTERVAL_MS} ms")
         else:
             self.auto_timer.stop()
             self.output_te.append("Autosend OFF")
