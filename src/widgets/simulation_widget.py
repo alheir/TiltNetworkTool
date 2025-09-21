@@ -1,6 +1,6 @@
 from PyQt6 import QtWidgets, QtCore
 from src.protocol.protocol_handler import ProtocolHandler
-from src.package.Station import STATION_COUNT, STATION_ANGLES_COUNT
+from src.package.Station import STATION_COUNT, STATION_ANGLES_COUNT, STATION_ID
 import math
 import time
 
@@ -17,6 +17,17 @@ class SimulationWidget(QtWidgets.QWidget):
         self.message_le = QtWidgets.QLineEdit()
         self.send_btn = QtWidgets.QPushButton("Send", clicked=self.send_simulated_data)
         self.auto_mode_cb = QtWidgets.QCheckBox("Toggle autosend mode, bypassing protocol_handler", toggled=self.toggle_auto_mode)
+
+        self.station_checkboxes = []
+        station_layout = QtWidgets.QHBoxLayout()
+        station_layout.addWidget(QtWidgets.QLabel("Stations:"))
+        for i, sid in enumerate(STATION_ID):
+            cb = QtWidgets.QCheckBox(sid.decode('utf-8'))
+            cb.setChecked(True if i == 0 else False)  # Simula solo estación 0 por defecto
+            cb.setEnabled(False) 
+            self.station_checkboxes.append(cb)
+            station_layout.addWidget(cb)
+
         self.output_te = QtWidgets.QTextEdit(readOnly=True)
         self.close_btn = QtWidgets.QPushButton("Close", clicked=self.close)
 
@@ -25,6 +36,7 @@ class SimulationWidget(QtWidgets.QWidget):
         lay.addWidget(self.message_le)
         lay.addWidget(self.send_btn)
         lay.addWidget(self.auto_mode_cb)
+        lay.addLayout(station_layout)
         lay.addWidget(QtWidgets.QLabel("Logs:"))
         lay.addWidget(self.output_te)
         lay.addWidget(self.close_btn)
@@ -54,6 +66,8 @@ class SimulationWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def toggle_auto_mode(self, checked):
+        for cb in self.station_checkboxes:
+            cb.setEnabled(checked)
         if checked:
             self.start_time = time.time()
             self.auto_timer.start()
@@ -67,6 +81,8 @@ class SimulationWidget(QtWidgets.QWidget):
         current_time = time.time() - self.start_time
         messages = []
         for station_idx in range(self.station_count):
+            if not self.station_checkboxes[station_idx].isChecked():
+                continue  # Skip unselected stations
             for angle_idx in range(self.angle_count):
                 # sin(tiempo + offset) * 90
                 offset = (station_idx * 0.5) + (angle_idx * 0.3)  # Offset por estación/ángulo
