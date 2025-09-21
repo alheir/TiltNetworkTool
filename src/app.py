@@ -1,6 +1,6 @@
 # PyQt5 modules
 from PyQt6 import QtWidgets
-import qdarktheme
+from qt_material import apply_stylesheet
 import logging
 import argparse
 
@@ -30,7 +30,10 @@ def main():
     logging.basicConfig(level=getattr(logging, args.log_level.upper()), format='%(levelname)s: %(message)s')
    
     app = QtWidgets.QApplication(sys.argv)
-    qdarktheme.setup_theme(args.theme)
+
+    theme_file = 'dark_blue.xml' if args.theme == 'dark' else 'light_blue.xml'
+    apply_stylesheet(app, theme=theme_file)
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

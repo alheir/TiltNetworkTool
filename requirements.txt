@@ -3,4 +3,4 @@ PyOpenGL
 numpy
 pyrr
 pyserial
-pyqtdarktheme==2.1.0
+qt-material
