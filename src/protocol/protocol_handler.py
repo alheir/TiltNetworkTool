@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+import logging
 
 class ProtocolHandler:
     """
@@ -11,7 +12,7 @@ class ProtocolHandler:
     """
     def __init__(self) -> None:
         # Buffer/s, constantes, ...        
-        print("[ProtocolHandler] Inicializado. Listo para recibir bytes del puerto serie.")
+        logging.info("[ProtocolHandler] Inicializado. Listo para recibir bytes del puerto serie.")
 
     def on_bytes(self, data: bytes) -> List[Dict[str, Any]]:
         """
@@ -33,7 +34,7 @@ class ProtocolHandler:
           # Lista vacía si no hay frames completos:
           # return []
         """
-        print(f"[ProtocolHandler] RX chunk: {data}")
+        logging.debug(f"[ProtocolHandler] RX chunk: {data}")
 
         #
         #
@@ -52,7 +53,7 @@ class ProtocolHandler:
         Debe devolver:
           - bytes listos para write() del puerto serie.
         """
-        print(f"[ProtocolHandler] Build LED cmd -> station={station_index}, R={r}, G={g}, B={b}")
+        logging.info(f"[ProtocolHandler] Build LED cmd -> station={station_index}, R={r}, G={g}, B={b}")
 
         #
         #

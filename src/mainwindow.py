@@ -7,6 +7,7 @@ from src.ui.mainwindow import Ui_MainWindow
 from PyQt6.QtCore import QByteArray, QTimer
 import serial
 from serial.tools.list_ports import comports
+import logging
 from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_COUNT, STATION_ANGLES
 from src.widgets.station_info_widget import StationInfoWidget
 from src.protocol.protocol_handler import ProtocolHandler
@@ -87,16 +88,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             angle_id = msg.get('angle')
             value = msg.get('value')
         except Exception as e:
-            print(f"[MainWindow] Mensaje inválido (faltan campos): {msg} ({e})")
+            logging.warning(f"[MainWindow] Mensaje inválido (faltan campos): {msg} ({e})")
             return
 
         angle_index = self._resolve_angle_index(angle_id)
         if angle_index not in (0, 1, 2):
-            print(f"[MainWindow] 'angle' no reconocido: {angle_id}")
+            logging.warning(f"[MainWindow] 'angle' no reconocido: {angle_id}")
             return
 
         if station_index < 0 or station_index >= STATION_COUNT:
-            print(f"[MainWindow] 'station_index' fuera de rango: {station_index}")
+            logging.warning(f"[MainWindow] 'station_index' fuera de rango: {station_index}") 
             return
 
         if self.stations[station_index].assignAngle(angle_index, value):
@@ -123,7 +124,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 try:
                     messages = self.protocol.on_bytes(chunk)
                 except NotImplementedError as e:
-                    print(f"[MainWindow] ProtocolHandler.on_bytes no implementado aún: {e}")
+                    logging.warning(f"[MainWindow] ProtocolHandler.on_bytes no implementado aún: {e}")
                     break
 
                 if not messages:
@@ -131,7 +132,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 for msg in messages:
                     self.processParsedMessage(msg)
         except Exception as e:
-            print(f"[MainWindow] Error en receive(): {e}")
+            logging.error(f"[MainWindow] Error en receive(): {e}")
 
     def toggleSerialConnection(self):
         if(not self.serialConnected):
@@ -208,18 +209,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.selected_b
             )
         except NotImplementedError as e:
-            print(f"[MainWindow] ProtocolHandler.build_led_command no implementado aún: {e}")
+            logging.warning(f"[MainWindow] ProtocolHandler.build_led_command no implementado aún: {e}")
             return
         except Exception as e:
-            print(f"[MainWindow] Error construyendo LED cmd: {e}")
+            logging.error(f"[MainWindow] Error construyendo LED cmd: {e}")
             return
 
         if not message:
-            print("[MainWindow] build_led_command devolvió vacío/None, no se envía nada.")
+            logging.warning("[MainWindow] build_led_command devolvió vacío/None, no se envía nada.")
             return
 
         try:
             self.serial.write(message)
-            print(f"[MainWindow] Enviado {len(message)} bytes: {message}")
+            logging.debug(f"[MainWindow] Enviado {len(message)} bytes: {message}")
         except Exception as e:
-            print(f"[MainWindow] Error enviando por serial: {e}")
+            logging.error(f"[MainWindow] Error enviando por serial: {e}")
