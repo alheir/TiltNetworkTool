@@ -3,4 +3,3 @@ PyOpenGL
 numpy
 pyrr
 pyserial
-qt-material
