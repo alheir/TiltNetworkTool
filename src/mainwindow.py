@@ -1,18 +1,18 @@
-# PyQt5 modules
+import time
+import logging
 from math import inf
-from PyQt6.QtWidgets import QMainWindow, QMessageBox
-# Project modules
-from src.ui.mainwindow import Ui_MainWindow
 
-from PyQt6.QtCore import QByteArray, QTimer
+from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from PyQt6.QtCore import QTimer, QByteArray
+
 import serial
 from serial.tools.list_ports import comports
-import logging
+
+from src.ui.mainwindow import Ui_MainWindow
 from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_COUNT, STATION_ANGLES
 from src.widgets.station_info_widget import StationInfoWidget
 from src.protocol.protocol_handler import ProtocolHandler
 from src.widgets.simulation_widget import SimulationWidget
-import time
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
@@ -254,7 +254,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         QMessageBox.about(self, "About", about_text)
 
-    # New method to update last update labels
     def updateLastUpdateLabels(self):
         current_time = time.time()
         for i, last_time in enumerate(self.last_update_times):
