@@ -22,12 +22,12 @@ class FrdmViewerWidget(QOpenGLWidget):
         self.stations_mesh = []
         self.stations_active = [False]*STATION_COUNT
         self.modelIndex = 0
+        self.theme = 'light'
 
     def initializeGL(self) -> None:
         """
             Configure any desired OpenGL options
         """
-        glClearColor(0.941, 0.941, 0.941, 1)
         for x in range(STATION_COUNT):
             self.stations.append(Entity(
                 position = [-STATION_COUNT*100/2+100*x,0,-100],
@@ -76,6 +76,12 @@ class FrdmViewerWidget(QOpenGLWidget):
     def paintGL(self):
         for x in range(STATION_COUNT):
             self.stations[x].update()
+        
+        if self.theme == 'dark':
+            glClearColor(0.2, 0.2, 0.2, 1.0)
+        else:
+            glClearColor(0.941, 0.941, 0.941, 1.0)
+        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.shader)
 
@@ -103,6 +109,9 @@ class FrdmViewerWidget(QOpenGLWidget):
         self.modelIndex = index
         self.update()
         
+    def setTheme(self, theme):
+        self.theme = theme
+        self.update()  # Solo actualiza, no llames glClearColor
 
     def quit(self) -> None:
         """ cleanup the app, run exit code """

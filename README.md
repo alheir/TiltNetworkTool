@@ -44,6 +44,15 @@ Implementar los métodos `on_bytes` y `build_led_command` de la clase `ProtocolH
 
 La aplicación contiene diversos prints/logs que reportan información útil del funcionamiento interno. Se puede ajustar el nivel de reporte; ver `python main.py -h` y/o `src/app.py`
 
+### Serial configuration
+
+La aplicación utiliza los siguientes parámetros de comunicación serial por defecto:
+
+- **Baudrate:** 115200
+- **Formato:** 8N1 (8 bits de datos, sin paridad, 1 bit de stop)
+
+Desde la GUI se puede seleccionar el baudrate entre las siguientes opciones: 2400, 4800, 9600, 19200, 38400, 57600 y 115200 (predeterminado).
+
 ### Serial Data Emulator
 
 La aplicación cuenta con un emulador de puerto serie, que permite probar la aplicación sin tener un dispositivo real conectado y enviando comandos por el puerto. La misma permite enviar mensajes personalizados como si viniesen de un dispositivo externo, permitiendo interactuar con el método `on_bytes` de manera controlada. También, cuenta con un modo automático para enviar directamente datos dummy a la GUI, bypasseando `protocol_handler`, pudiendo visualizar las estaciones en movimiento.

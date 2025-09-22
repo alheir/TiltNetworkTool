@@ -232,6 +232,8 @@
     </widget>
     <addaction name="actionRefresh_ports"/>
     <addaction name="menuModel"/>
+    <addaction name="actionToggle_theme"/>
+    <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuActions"/>
@@ -310,6 +312,11 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionToggle_theme">
+   <property name="text">
+    <string>Toggle theme</string>
    </property>
   </action>
  </widget>

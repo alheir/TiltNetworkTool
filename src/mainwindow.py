@@ -14,6 +14,7 @@ from src.widgets.station_info_widget import StationInfoWidget
 from src.protocol.protocol_handler import ProtocolHandler
 from src.widgets.simulation_widget import SimulationWidget
 from src.widgets.plot_widget import PlotWidget
+from src.themes import LIGHT_THEME, DARK_THEME
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
@@ -45,6 +46,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # New: Lists to store angle histories (timestamps and values for roll, pitch, yaw per station)
         self.angle_histories = [[[], [], []] for _ in range(STATION_COUNT)]  # [station][angle][(timestamp, value)]
         self.plot_widgets = [None] * STATION_COUNT  # To hold plot widget instances
+        self.actionToggle_theme.triggered.connect(self.toggleTheme)
+        self.current_theme = 'light'
 
         for i in range(len(STATION_ID)):
             siw = StationInfoWidget(self)
@@ -313,7 +316,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             <li>Eng. Juan Francisco Sbruzzi (original TiltNetworkTool, 🏆🏆🏆)</li>
             <li>Alejandro Nahuel Heir (adaptation, current dev)</li>
         </ul>
-        <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool">github.com/alheir/TiltNetworkTool</a></p>
+        <p><b>Source:</b> <a href="https://github.com/alheir/TiltNetworkTool" style="color:green;">github.com/alheir/TiltNetworkTool</a></p>
         """
         QMessageBox.about(self, "About", about_text)
 
@@ -335,3 +338,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except SerialException as e:
             logging.warning(f"[MainWindow] Error closing serial on exit: {e}")
         event.accept()
+
+    def setTheme(self, theme):
+        self.current_theme = theme
+        self.oglw.setTheme(theme)
+
+    def toggleTheme(self):
+        if self.current_theme == 'light':
+            self.app.setStyleSheet(DARK_THEME)
+            self.current_theme = 'dark'
+        else:
+            self.app.setStyleSheet(LIGHT_THEME)
+            self.current_theme = 'light'
+        self.setTheme(self.current_theme)
