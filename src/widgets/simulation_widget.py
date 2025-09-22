@@ -15,6 +15,8 @@ class SimulationWidget(QtWidgets.QWidget):
         self.setGeometry(100, 100, 400, 300)
 
         self.message_le = QtWidgets.QLineEdit()
+        self.format_cb = QtWidgets.QComboBox()
+        self.format_cb.addItems(["ASCII", "Hex", "Binary", "Raw Bytes"])
         self.send_btn = QtWidgets.QPushButton("Send", clicked=self.send_simulated_data)
         self.auto_mode_cb = QtWidgets.QCheckBox("Toggle autosend mode, bypassing protocol_handler", toggled=self.toggle_auto_mode)
 
@@ -33,7 +35,11 @@ class SimulationWidget(QtWidgets.QWidget):
 
         lay = QtWidgets.QVBoxLayout(self)
         lay.addWidget(QtWidgets.QLabel("Message simulating your protocol from K64F:"))
-        lay.addWidget(self.message_le)
+        input_layout = QtWidgets.QHBoxLayout()
+        input_layout.addWidget(self.message_le)
+        input_layout.addWidget(QtWidgets.QLabel("Format:"))
+        input_layout.addWidget(self.format_cb)
+        lay.addLayout(input_layout)
         lay.addWidget(self.send_btn)
         lay.addWidget(self.auto_mode_cb)
         lay.addLayout(station_layout)
@@ -53,15 +59,30 @@ class SimulationWidget(QtWidgets.QWidget):
         text = self.message_le.text().strip()
         if not text:
             return
-        # Convertir a bytes y simular recepción
-        data = text.encode('utf-8')
+        format_type = self.format_cb.currentText()
         try:
-            messages = self.protocol.on_bytes(data) # Parsea el mensaje según protocol_handler
-            self.output_te.append(f"Enviado: {text} -> {len(messages)} mensajes parseados")
+            if format_type == "ASCII":
+                data = text.encode('utf-8')
+            elif format_type == "Hex":
+                data = bytes(int(b, 16) for b in text.split())
+            elif format_type == "Binary":
+                data = bytes(int(b, 2) for b in text.split())
+            elif format_type == "Raw Bytes":
+                data = bytes(int(b) for b in text.split())
+            else:
+                raise ValueError("Unsupported format")
+        except ValueError as e:
+            self.output_te.append(f"Error parsing input: {e}")
+            return
+        
+        self.output_te.append(f"Sending raw bytes (hex): {data.hex()}")
+        try:
+            messages = self.protocol.on_bytes(data)  # Parsea el mensaje según protocol_handler
+            self.output_te.append(f"Parsed {len(messages)} messages: {messages}")
             for msg in messages:
                 self.main_window.processParsedMessage(msg)  # Envia a mainwindow
         except Exception as e:
-            self.output_te.append(f"Error: {e}")
+            self.output_te.append(f"Error in on_bytes: {e}")
         self.message_le.clear()
 
     @QtCore.pyqtSlot(bool)
@@ -82,7 +103,7 @@ class SimulationWidget(QtWidgets.QWidget):
         messages = []
         for station_idx in range(self.station_count):
             if not self.station_checkboxes[station_idx].isChecked():
-                continue  # Skip unselected stations
+                continue
             for angle_idx in range(self.angle_count):
                 # sin(tiempo + offset) * 90
                 offset = (station_idx * 0.5) + (angle_idx * 0.3)  # Offset por estación/ángulo
