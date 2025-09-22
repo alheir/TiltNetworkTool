@@ -17,6 +17,7 @@ class SimulationWidget(QtWidgets.QWidget):
         self.message_le = QtWidgets.QLineEdit()
         self.format_cb = QtWidgets.QComboBox()
         self.format_cb.addItems(["ASCII", "Hex", "Binary", "Raw Bytes"])
+        self.format_cb.currentTextChanged.connect(self.update_placeholder)
         self.send_btn = QtWidgets.QPushButton("Send", clicked=self.send_simulated_data)
         self.auto_mode_cb = QtWidgets.QCheckBox("Toggle autosend mode, bypassing protocol_handler", toggled=self.toggle_auto_mode)
 
@@ -53,6 +54,8 @@ class SimulationWidget(QtWidgets.QWidget):
         self.start_time = time.time()
         self.station_count = STATION_COUNT
         self.angle_count = STATION_ANGLES_COUNT
+
+        self.update_placeholder()
 
     @QtCore.pyqtSlot()
     def send_simulated_data(self):
@@ -118,6 +121,19 @@ class SimulationWidget(QtWidgets.QWidget):
                 # Bypass ProtocolHandler
                 self.main_window.processParsedMessage(msg)
         self.output_te.append(f"Autosend {len(messages)} messages.")
+
+    @QtCore.pyqtSlot(str)
+    def update_placeholder(self, format_type=None):
+        if format_type is None:
+            format_type = self.format_cb.currentText()
+        if format_type == "ASCII":
+            self.message_le.setPlaceholderText("(e.g., Hello World!)")
+        elif format_type == "Hex":
+            self.message_le.setPlaceholderText("(e.g., 48 65 6C 6C 6F)")
+        elif format_type == "Binary":
+            self.message_le.setPlaceholderText("(e.g., 01001000 01100101)")
+        elif format_type == "Raw Bytes":
+            self.message_le.setPlaceholderText("(e.g., 72 101 108 108 111)")
 
     def closeEvent(self, event):
         self.auto_timer.stop()
