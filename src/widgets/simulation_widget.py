@@ -69,7 +69,13 @@ class SimulationWidget(QtWidgets.QWidget):
             elif format_type == "Hex":
                 data = bytes.fromhex(text.replace(' ', ''))
             elif format_type == "Binary":
-                data = bytes(int(b, 2) for b in text.split())
+                bin_values = []
+                for b in text.split():
+                    val = int(b, 2)
+                    if val > 255 or val < 0:
+                        raise ValueError(f'Binary value {b} exceeds byte range (0-255)')
+                    bin_values.append(val)
+                data = bytes(bin_values)
             elif format_type == "Raw Bytes":
                 data = bytes(int(b) for b in text.split())
             else:
