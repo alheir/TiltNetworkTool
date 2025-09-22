@@ -1,6 +1,5 @@
 import time
 import logging
-from math import inf
 
 from PyQt6.QtWidgets import QMainWindow, QMessageBox
 from PyQt6.QtCore import QTimer
@@ -14,12 +13,15 @@ from src.package.Station import Station, STATION_ID, STATION_ID_NAMES, STATION_C
 from src.widgets.station_info_widget import StationInfoWidget
 from src.protocol.protocol_handler import ProtocolHandler
 from src.widgets.simulation_widget import SimulationWidget
+from src.widgets.plot_widget import PlotWidget
 from src.themes import LIGHT_THEME, DARK_THEME
 
 IDLE_TIMER_MS = 2500  # 2.5s
 RX_TIMER_MS = 10
 LAST_TIME_UPDATE_MS = 1000  # 1s
 SIMULATION_NAME = "⚔️🛠️⚙️Serial Data Emulator⚙️🛠️⚔️"
+HISTORY_LIMIT = 50  # Puntos maximos por plot
+PLOT_UPDATE_MS = 100 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     
@@ -40,6 +42,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionFRDM_K64F.triggered.connect(self.selectFRDMModel)
         self.actionPlane.triggered.connect(self.selectPlaneModel)
         self.actionAbout.triggered.connect(self.showAbout)
+
+        # New: Lists to store angle histories (timestamps and values for roll, pitch, yaw per station)
+        self.angle_histories = [[[], [], []] for _ in range(STATION_COUNT)]  # [station][angle][(timestamp, value)]
+        self.plot_widgets = [None] * STATION_COUNT  # To hold plot widget instances
         self.actionToggle_theme.triggered.connect(self.toggleTheme)
         self.current_theme = 'light'
 
@@ -47,6 +53,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             siw = StationInfoWidget(self)
             self.stationInfoLayout.addWidget(siw)
             self.stationInfoWidgets.append(siw)
+            # Connect the plot button signal to a slot
+            siw.plotButton.clicked.connect(self.togglePlotForStation(i))
         self.timers = []
 
         self.last_update_times = [None] * STATION_COUNT
@@ -82,6 +90,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         update_timer.start()
         self.lastUpdateTimer = update_timer
 
+        # New: Timer para actualizar plots periódicamente
+        plot_update_timer = QTimer()
+        plot_update_timer.setInterval(PLOT_UPDATE_MS)
+        plot_update_timer.setSingleShot(False)
+        plot_update_timer.timeout.connect(self.updateOpenPlots)
+        plot_update_timer.start()
+        self.plotUpdateTimer = plot_update_timer
+
         self.stationSelector_cb.addItems(STATION_ID_NAMES)
         self.send_pb.clicked.connect(self.sendLEDCommand)
         self.LED_gb.setEnabled(False)
@@ -93,6 +109,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def disableStationInfoWidget(self, stationIndex):
         self.stationInfoWidgets[stationIndex].setEnabled(False)
         self.oglw.setStationInactive(stationIndex)
+
+    def togglePlotForStation(self, station_index):
+        def toggle():
+            if self.plot_widgets[station_index] is None:
+                self.plot_widgets[station_index] = PlotWidget(station_index, self.angle_histories[station_index])
+                self.plot_widgets[station_index].show()
+            else:
+                self.plot_widgets[station_index].close()
+                self.plot_widgets[station_index] = None
+        return toggle
+
+    def updateOpenPlots(self):
+        for i in range(STATION_COUNT):
+            if self.plot_widgets[i]:
+                self.plot_widgets[i].updatePlot(self.angle_histories[i])
 
     def processParsedMessage(self, msg: dict):
         """
@@ -119,6 +150,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         if self.stations[station_index].assignAngle(angle_index, value):
+            current_time = time.time()
+            self.angle_histories[station_index][angle_index].append((current_time, value))
+
+            if len(self.angle_histories[station_index][angle_index]) > HISTORY_LIMIT:
+                self.angle_histories[station_index][angle_index].pop(0)
+
             self.last_update_times[station_index] = time.time()
             self.timers[station_index].start()
             self.stationInfoWidgets[station_index].setEnabled(True)
@@ -192,6 +229,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except SerialException as e:
                 logging.warning(f"[MainWindow] Error closing serial port: {e}")
             self.serialConnected = False
+            self.angle_histories = [[[], [], []] for _ in range(STATION_COUNT)]
         self.configPortSettings(self.serialConnected)
     
     def configPortSettings(self, connected=False):

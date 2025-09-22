@@ -26,6 +26,9 @@ class StationInfoWidget(QtWidgets.QWidget):
         self.labelLastUpdate = QtWidgets.QLabel(text="Last Update: N/A")
         self.groupBox.layout().addWidget(self.labelLastUpdate, 3, 0, 1, 2)
         
+        self.plotButton = QtWidgets.QPushButton("Plot")
+        self.groupBox.layout().addWidget(self.plotButton, 4, 0, 1, 2)
+        
         grid.addWidget(self.groupBox,0,0)
         self.setLayout(grid)
 
@@ -48,6 +51,9 @@ class StationInfoWidget(QtWidgets.QWidget):
     def setLastUpdateTime(self, seconds_ago):
         if seconds_ago is None:
             self.labelLastUpdate.setText("Last Update: N/A")
-        else:
+        elif seconds_ago < 60:
             self.labelLastUpdate.setText(f"Last Update: {int(seconds_ago)} s")
+        else:
+            minutes = int(seconds_ago // 60)
+            self.labelLastUpdate.setText(f"Last Update: {minutes} m")
 

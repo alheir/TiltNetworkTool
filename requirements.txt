@@ -3,3 +3,4 @@ PyOpenGL
 numpy
 pyrr
 pyserial
+pyqtgraph
