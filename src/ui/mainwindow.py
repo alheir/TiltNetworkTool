@@ -148,10 +148,14 @@ class Ui_MainWindow(object):
         self.actionPlane.setObjectName("actionPlane")
         self.actionAbout = QtGui.QAction(parent=MainWindow)
         self.actionAbout.setObjectName("actionAbout")
+        self.actionToggle_theme = QtGui.QAction(parent=MainWindow)
+        self.actionToggle_theme.setObjectName("actionToggle_theme")
         self.menuModel.addAction(self.actionFRDM_K64F)
         self.menuModel.addAction(self.actionPlane)
         self.menuActions.addAction(self.actionRefresh_ports)
         self.menuActions.addAction(self.menuModel.menuAction())
+        self.menuActions.addAction(self.actionToggle_theme)
+        self.menuActions.addSeparator()
         self.menuActions.addAction(self.actionAbout)
         self.menuBar.addAction(self.menuActions.menuAction())
 
@@ -191,4 +195,5 @@ class Ui_MainWindow(object):
         self.actionFRDM_K64F.setText(_translate("MainWindow", "FRDM K64F"))
         self.actionPlane.setText(_translate("MainWindow", "Plane"))
         self.actionAbout.setText(_translate("MainWindow", "About"))
+        self.actionToggle_theme.setText(_translate("MainWindow", "Toggle theme"))
 from src.widgets.frdm_viewer_widget import FrdmViewerWidget
