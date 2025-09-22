@@ -67,7 +67,7 @@ class SimulationWidget(QtWidgets.QWidget):
             if format_type == "ASCII":
                 data = text.encode('utf-8')
             elif format_type == "Hex":
-                data = bytes(int(b, 16) for b in text.split())
+                data = bytes.fromhex(text.replace(' ', ''))
             elif format_type == "Binary":
                 data = bytes(int(b, 2) for b in text.split())
             elif format_type == "Raw Bytes":
