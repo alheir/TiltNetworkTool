@@ -77,7 +77,13 @@ class SimulationWidget(QtWidgets.QWidget):
                     bin_values.append(val)
                 data = bytes(bin_values)
             elif format_type == "Raw Bytes":
-                data = bytes(int(b) for b in text.split())
+                raw_bytes = []
+                for b in text.split():
+                    val = int(b)
+                    if not (0 <= val <= 255):
+                        raise ValueError(f'Raw byte value {b} must be 0-255')
+                    raw_bytes.append(val)
+                data = bytes(raw_bytes)
             else:
                 raise ValueError("Unsupported format")
         except ValueError as e:
