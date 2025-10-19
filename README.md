@@ -1,4 +1,7 @@
 # TiltNetworkTool
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alheir/TiltNetworkTool)
+
 Esta es una herramienta de apoyo para el curso 25.27 – Sistemas Embebidos del ITBA (Carrera de Ingeniería Electrónica), para el trabajo práctico de comunicación serie, donde múltiples estaciones basadas en FRDM-K64F reportan su inclinación utilizando sus acelerómetros, a través de un bus CAN compartido. Ya cuenta con su parte gráfica resuelta, dejando para su libre implementación el protocolo serie a usar para-con el K64F.
 
 > Diseñado originalmente por el Ing. Juan Francisco Sbruzzi durante su transcurso por el curso en Q2-2023.
